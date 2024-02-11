@@ -1,0 +1,21 @@
+Recipes are set up in this way:
+
+Recipe_name
+Description (must be on one line)
+Number of ingredients (u32)
+Ingredient_name Quantity(f32) Unit_of_Measurement(Could be: Piece, )
+Number of steps
+Step1
+StepX
+Another_Recipe
+
+Possible units of Unit_of_Measurement
+Miligram,
+Gram,
+Decagram,
+Kilogram,
+Cup,
+Teaspoon,
+Tablespoon,
+Liter,
+Piece
