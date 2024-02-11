@@ -8,14 +8,3 @@ Number of steps
 Step1
 StepX
 Another_Recipe
-
-Possible units of Unit_of_Measurement
-Miligram,
-Gram,
-Decagram,
-Kilogram,
-Cup,
-Teaspoon,
-Tablespoon,
-Liter,
-Piece
