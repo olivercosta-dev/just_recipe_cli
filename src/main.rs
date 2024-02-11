@@ -1,7 +1,8 @@
 #![allow(unused_imports)]
 
+use std::char::ToLowercase;
 use std::error::Error;
-use std::fmt::{self, Debug, Display};
+use std::fmt::{self, Debug, DebugStruct, Display};
 use Volume::*;
 use Weight::*;
 use std::fs::{read, File};
@@ -44,7 +45,12 @@ enum Weight {
     Decagram,
     Kilogram,
 }
-
+enum MainMenuOption{
+    ShowAllRecipes,
+    AddNewRecipe,
+    RemoveRecipe,
+    Exit
+}
 
 #[derive(Debug,Clone)]
 struct CharacterNotInSelectionError(char);
@@ -66,16 +72,15 @@ impl<T : Display> fmt::Display for NotACharacterError<T> {
 impl<T:Debug + Display> error::Error for NotACharacterError<T> {}
 
 fn main() {
-    let recipes: Vec<Recipe> = read_default_recipes().unwrap();
+    let mut recipes: Vec<Recipe> = read_default_recipes().unwrap();
     println!("Welcome to the recipes CLI program!");
     println!("Here you can find recipes of all kinds, and even create your own!");
     loop {
-        println!("What do you want to do?");
-        print_main_menu_options();
-        let selected = user_select_option();
-        println!("Succesful selection: {}", selected);
+        display_main_menu();
+        handle_user_choice(get_user_choice(), &mut recipes);
     }
 }
+
 fn string_to_unit(string: &str) -> Option<Unit>{
     match string.to_lowercase().as_str() {
         "piece" | "pieces" => Some(Unit::Piece),
@@ -179,14 +184,141 @@ fn read_default_recipes() -> Result<Vec<Recipe>, Box<dyn error::Error>> {
     Ok(recipes)
 }
 
-fn user_select_option() -> char {
+fn handle_user_choice(choice : MainMenuOption, recipes: &mut Vec<Recipe>) {
+    
+    match choice {
+        MainMenuOption::ShowAllRecipes => print_recipes(recipes),
+        MainMenuOption::AddNewRecipe => {
+            let new_recipe = collect_recipe_from_user();
+            recipes.push(new_recipe);
+        }
+        MainMenuOption::RemoveRecipe => println!("Coming soon"),
+        MainMenuOption::Exit => println!("Coming soon"),
+    }   
+}
+
+fn collect_recipe_from_user() -> Recipe {
+    println!("Please enter the name of the recipe!");
+    let mut name : &mut String = &mut String::new();
+    while let Err(error) = stdin().read_line(&mut name){
+        println!("Please try entering the name again: {}",error);
+    };
+
+    println!("Please enter a description for the recipe! (Must be only 1 line)");
+    let mut description : &mut String = &mut String::new();
+    while let Err(error) = stdin().read_line(&mut description){
+        println!("Please try entering the description again: {}",error);
+    };
+
+    println!("Please enter the number of ingredients!");
+    let mut number_of_ingredients : u32 = 0;
+    let mut number_of_ingredients_string : &mut String = &mut String::new();
+    let mut is_valid = false;
+    while !is_valid {
+        while let Err(error) = stdin().read_line(&mut number_of_ingredients_string){
+            println!("Please try entering the number again: {}", error);
+        };
+        match number_of_ingredients_string.trim().parse::<u32>(){
+            Ok(number) => {
+                number_of_ingredients = number;
+                is_valid = true;
+            },
+            Err(error) => println!("There was an error: {}, please try entering the number again!",error)
+        };
+    };
+    
+
+    let mut ingredients : Vec<Ingredient> = vec![];
+    for _ in 0..number_of_ingredients {
+        println!("Please enter the ingredient! (Ingredient names cannot have whitespaces. Use \"_\" instead");
+        println!("Ingredient must have the following format:\nName Quantity Unit");
+        ingredients.push(read_ingredient());
+    }
+
+    is_valid = false;
+    let mut number_of_steps_string = String::new();
+    let mut number_of_steps = 0;
+    println!("Please enter the number of steps!");
+    while !is_valid {
+        while let Err(error) = stdin().read_line(&mut number_of_steps_string){
+            println!("Please try entering the number again: {}", error);
+        };
+        match number_of_ingredients_string.trim().parse::<u32>(){
+            Ok(number) => {
+                number_of_steps = number;
+                is_valid = true;
+            },
+            Err(error) => println!("There was an error: {}, please try entering the number again!",error)
+        };
+    };
+    let mut steps : Vec<String> = vec![];
+    for _ in 0..number_of_steps {
+        steps.push(read_step());
+    }
+    return Recipe {
+        name: String::from(name.as_str().trim()),
+        description: String::from(description.as_str().trim()),
+        ingredients,
+        steps
+    }
+
+
+}
+
+fn read_ingredient() -> Ingredient {
+    loop {
+        let mut ingredient_line_buf = String::new();
+        while let Err(error) = stdin().read_line(&mut ingredient_line_buf){
+            println!("Please try entering the ingredient again: {}",error);
+        };
+        let mut split_ingr_buf = ingredient_line_buf.split_whitespace();
+        if split_ingr_buf.clone().count() != 3 {
+            println!("Please enter a valid line!")
+        } else {
+            let name_option = split_ingr_buf.next();
+            let quantity_option = split_ingr_buf.next();
+            let unit_option = split_ingr_buf.next();
+            if let (Some(name), Some(unit_str), Some(quantity_str)) 
+                = (name_option, unit_option, quantity_option) {
+                if let (Some(unit), Ok(quantity)) = 
+                    (string_to_unit(unit_str), quantity_str.parse::<f32>()){
+                        return Ingredient {
+                            name: name.to_string(),
+                            quantity,
+                            unit_of_measurement: unit
+                        };
+                } else {
+                    println!("Unit or quanity format incorrect!");
+                    continue;
+                }
+            } else {
+                println!("Ingredient detail missing!");
+                continue;
+            }
+        }
+    };
+}
+
+fn read_step() -> String {
+    loop {
+        let mut buf = String::new();
+        if let Ok(_) = stdin().read_line(&mut buf){
+            return buf;
+        } else {
+            println!("Step format wrong! Please try again!");
+        }
+    }
+}
+
+// TODO (oliver): Make a way to exit the program. Perhaps use ESC key.
+fn get_user_choice() -> MainMenuOption {
     loop {
         let mut line = String::new(); 
         let read_result = stdin().read_line(&mut line);
         if let Ok(_result) = read_result {
             let validation_result = validate_user_selection(&mut line);
             match validation_result {
-                Ok(character) => return character,
+                Ok(choice) => return choice,
                 Err(err) => println!("{}",err),
             }
         } else {
@@ -195,7 +327,7 @@ fn user_select_option() -> char {
     }
 }
 
-fn validate_user_selection(selection: &mut String ) -> Result<char, Box<dyn error::Error>> {
+fn validate_user_selection(selection: &mut String ) -> Result<MainMenuOption, Box<dyn error::Error>> {
     
     while selection.ends_with('\n') || selection.ends_with('\r') {
         selection.pop();
@@ -206,21 +338,22 @@ fn validate_user_selection(selection: &mut String ) -> Result<char, Box<dyn erro
     }
 
     match selection.to_lowercase().chars().next() {
-        Some('a') => Ok('a'),
-        Some('b') => Ok('b'),
-        Some('c') => Ok('c'),
-        Some('d') => Ok('d'),
+        Some('a') => Ok(MainMenuOption::ShowAllRecipes),
+        Some('b') => Ok(MainMenuOption::AddNewRecipe),
+        Some('c') => Ok(MainMenuOption::RemoveRecipe),
+        Some('q') => Ok(MainMenuOption::Exit),
         Some(char) => Err(CharacterNotInSelectionError(char))?,
         None => Err("No character found")?,
     }
 }
 
 // PRINTING FUNCTIONS
-fn print_main_menu_options(){
+fn display_main_menu(){
+    println!("What do you want to do?");
     println!("A) See all Recipes");
     println!("B) Add a new recipe");
     println!("C) Remove an existing recipe");
-    println!("Press anything else to exit!");
+    println!("Q) Exit");
 }
 
 fn print_recipes(recipes: &Vec<Recipe>){
