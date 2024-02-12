@@ -229,11 +229,13 @@ fn handle_user_choice(choice : MainMenuOption, recipes: &mut Vec<Recipe>) {
             if add_recipe_to_file(&new_recipe).is_ok() {
                 recipes.push(new_recipe);
             } else {
-                println!("Something went wrong.... Recipe could not be added to the file!");
+                println!("Something went wrong... Recipe could not be added to the file!");
             }
         }
         MainMenuOption::RemoveRecipe => println!("Coming soon"),
-        MainMenuOption::Exit => println!("Coming soon"),
+        MainMenuOption::Exit => {
+            std::process::exit(0);  
+        },
     }   
 }
 fn add_recipe_to_file(recipe : &Recipe) -> Result<(),Box<dyn Error>>{
