@@ -5,8 +5,8 @@ use std::error::Error;
 use std::fmt::{self, Debug, DebugStruct, Display};
 use Volume::*;
 use Weight::*;
-use std::fs::{read, File};
-use std::io::{stdin, BufRead, BufReader};
+use std::fs::{self, read, File};
+use std::io::{stdin, BufRead, BufReader, Write};
 use std::{char, default, error, io, vec};
 
 
@@ -20,7 +20,7 @@ struct Recipe {
 #[derive(Debug)]
 struct Ingredient{
     name: String,
-    quantity: f32  ,
+    quantity: f32,
     unit_of_measurement: Unit
 }
 #[derive(Debug)]
@@ -44,6 +44,42 @@ enum Weight {
     Gram,
     Decagram,
     Kilogram,
+}
+impl fmt::Display for Weight {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Weight::Kilogram => write!(f, "Kilogram"),
+            Weight::Decagram => write!(f, "Decagram"),
+            Weight::Milligram => write!(f, "Milligram"),
+            Weight::Gram => write!(f, "Gram"),
+        }
+    }
+}
+impl fmt::Display for Volume {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Volume::Liter => write!(f, "Liter"),
+            Volume::Milliliter => write!(f, "Milliliter"),
+            Volume::Cup => write!(f, "Cup"),
+            Volume::Ounce => write!(f, "Ounce"),
+            Volume::Tablespoon => write!(f, "Tablespoon"),
+            Volume::Teaspoon => write!(f, "Teaspoon"),
+        }
+    }
+}
+impl fmt::Display for Unit {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Unit::Volume(volume) => write!(f,"{}",volume),
+            Unit::Weight(weight) => write!(f,"{}",weight),
+            Unit::Piece => write!(f,"Piece"),
+        }
+    }
+}
+impl fmt::Display for Ingredient {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {} {}", self.name, self.quantity, self.unit_of_measurement)
+    }
 }
 enum MainMenuOption{
     ShowAllRecipes,
@@ -190,12 +226,49 @@ fn handle_user_choice(choice : MainMenuOption, recipes: &mut Vec<Recipe>) {
         MainMenuOption::ShowAllRecipes => print_recipes(recipes),
         MainMenuOption::AddNewRecipe => {
             let new_recipe = collect_recipe_from_user();
-            recipes.push(new_recipe);
+            if add_recipe_to_file(&new_recipe).is_ok() {
+                recipes.push(new_recipe);
+            } else {
+                println!("Something went wrong.... Recipe could not be added to the file!");
+            }
         }
         MainMenuOption::RemoveRecipe => println!("Coming soon"),
         MainMenuOption::Exit => println!("Coming soon"),
     }   
 }
+fn add_recipe_to_file(recipe : &Recipe) -> Result<(),Box<dyn Error>>{
+    let mut recipe_data = String::new(); 
+    recipe_data.push_str(&recipe.name);
+    recipe_data.push('\n');
+
+    recipe_data.push_str(&recipe.description);
+    recipe_data.push('\n');
+    
+    recipe_data.push_str(&recipe.ingredients.len().to_string());
+    recipe_data.push('\n');
+    
+    for ingredient in &recipe.ingredients{
+        recipe_data.push_str(&format!("{}",ingredient));
+    }
+    recipe_data.push('\n');
+
+    recipe_data.push_str(&recipe.steps.len().to_string());
+    recipe_data.push('\n');
+
+    for step in &recipe.steps {
+        recipe_data.push_str(step);
+        recipe_data.push('\n');
+    }
+    recipe_data.pop();
+
+    let mut file  = fs::OpenOptions::new()
+       .create(true)
+       .append(true)
+       .open("./recipes/recipes.txt")?;
+    file.write_all(recipe_data.as_bytes())?;
+    Ok(())
+}
+
 
 fn collect_recipe_from_user() -> Recipe {
     println!("Please enter the name of the recipe!");
