@@ -232,45 +232,57 @@ fn handle_user_choice(choice : MainMenuOption, recipes: &mut Vec<Recipe>) {
                 println!("Something went wrong... Recipe could not be added to the file!");
             }
         }
-        MainMenuOption::RemoveRecipe => println!("Coming soon"),
-        MainMenuOption::Exit => {
-            std::process::exit(0);  
+        MainMenuOption::RemoveRecipe => {
+            println!("Please enter the name of the recipe!");
+            let mut name : &mut String = &mut String::new();
+            while let Err(error) = stdin().read_line(&mut name) {
+                println!("Please try entering the name again: {}",error);
+            };
+            remove_recipe(&name.trim(), recipes);
+            println!("Succesfully deleted!");
         },
+        MainMenuOption::Exit => std::process::exit(0),
     }   
 }
-fn add_recipe_to_file(recipe : &Recipe) -> Result<(),Box<dyn Error>>{
-    let mut recipe_data = String::new(); 
-    recipe_data.push_str(&recipe.name);
-    recipe_data.push('\n');
 
-    recipe_data.push_str(&recipe.description);
-    recipe_data.push('\n');
+fn remove_recipe(name : &str, recipes: &mut Vec<Recipe>) -> Result<(), Box<dyn Error>>{
     
-    recipe_data.push_str(&recipe.ingredients.len().to_string());
-    recipe_data.push('\n');
+    for index in 0..recipes.len() {
+        if recipes[index].name.eq(name) {
+            recipes.remove(index);
+            delete_all_recipes_from_file()?;
+            for recipe in recipes {
+                add_recipe_to_file(recipe)?;
+            }
+            return Ok(());
+        }
+    }
+    Err("Recipe not found")?
+}
+fn delete_all_recipes_from_file() -> Result<(), Box<dyn Error>>{
+    let file = File::create("./recipes/recipes.txt")?;
+    file.set_len(0)?;
     
-    for ingredient in &recipe.ingredients{
-        recipe_data.push_str(&format!("{}",ingredient));
-    }
-    recipe_data.push('\n');
+    Ok(())
+}
 
-    recipe_data.push_str(&recipe.steps.len().to_string());
-    recipe_data.push('\n');
-
-    for step in &recipe.steps {
-        recipe_data.push_str(step);
-        recipe_data.push('\n');
-    }
-    recipe_data.pop();
-
+fn add_recipe_to_file(recipe : &Recipe) -> Result<(),Box<dyn Error>> {
     let mut file  = fs::OpenOptions::new()
        .create(true)
        .append(true)
        .open("./recipes/recipes.txt")?;
-    file.write_all(recipe_data.as_bytes())?;
+    writeln!(file, "{}", recipe.name)?;
+    writeln!(file, "{}", recipe.description)?;
+    writeln!(file,"{}", recipe.ingredients.len())?;
+    for ing in &recipe.ingredients {
+        writeln!(file, "{}", ing)?;
+    }
+    writeln!(file,"{}",recipe.steps.len())?;
+    for step in &recipe.steps {
+        writeln!(file, "{}", step)?;
+    }
     Ok(())
 }
-
 
 fn collect_recipe_from_user() -> Recipe {
     println!("Please enter the name of the recipe!");
@@ -304,7 +316,7 @@ fn collect_recipe_from_user() -> Recipe {
     
 
     let mut ingredients : Vec<Ingredient> = vec![];
-    for _ in 0..number_of_ingredients {
+    for _ in 1..=number_of_ingredients {
         println!("Please enter the ingredient! (Ingredient names cannot have whitespaces. Use \"_\" instead");
         println!("Ingredient must have the following format:\nName Quantity Unit");
         ingredients.push(read_ingredient());
@@ -318,7 +330,7 @@ fn collect_recipe_from_user() -> Recipe {
         while let Err(error) = stdin().read_line(&mut number_of_steps_string){
             println!("Please try entering the number again: {}", error);
         };
-        match number_of_ingredients_string.trim().parse::<u32>(){
+        match number_of_steps_string.trim().parse::<u32>(){
             Ok(number) => {
                 number_of_steps = number;
                 is_valid = true;
@@ -326,9 +338,11 @@ fn collect_recipe_from_user() -> Recipe {
             Err(error) => println!("There was an error: {}, please try entering the number again!",error)
         };
     };
+    
     let mut steps : Vec<String> = vec![];
-    for _ in 0..number_of_steps {
-        steps.push(read_step());
+    for index in 1..=number_of_steps {
+        println!("Please enter step number {}", index);
+        steps.push(read_step().trim().to_string());
     }
     return Recipe {
         name: String::from(name.as_str().trim()),
@@ -436,7 +450,10 @@ fn print_recipes(recipes: &Vec<Recipe>){
         println!("{}",recipe.name);
         println!("{}",recipe.description);
         for ingredient in &recipe.ingredients {
-            println!("{:?}",ingredient);
+            println!("{}",ingredient);
+        }
+        for step in &recipe.steps {
+            println!("{}", step);
         }
         println!();
     }
