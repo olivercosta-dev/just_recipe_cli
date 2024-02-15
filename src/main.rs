@@ -259,6 +259,7 @@ fn remove_recipe(name : &str, recipes: &mut Vec<Recipe>) -> Result<(), Box<dyn E
     }
     Err("Recipe not found")?
 }
+
 fn delete_all_recipes_from_file() -> Result<(), Box<dyn Error>>{
     let file = File::create("./recipes/recipes.txt")?;
     file.set_len(0)?;
