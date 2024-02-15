@@ -1,0 +1,19 @@
+{
+    "name": "Vampire Bite Cupcakes",
+    "description": "Sinfully delicious cupcakes with a bloody surprise inside, perfect for Halloween or anytime you're feeling a bit vampy.",
+    "ingredients": [
+      {"name": "Dark Chocolate Cupcakes", "unit": "Pieces", "amount": 12},
+      {"name": "Raspberry Filling", "unit": "Cup", "amount": 0.5},
+      {"name": "Blood Red Frosting", "unit": "Cup", "amount": 1},
+      {"name": "Vampire Fangs Sprinkles", "unit": "Tablespoons", "amount": 2},
+      {"name": "Ghoul Goo", "unit": "Tablespoons", "amount": 3},
+      {"name": "Black Magic Dust", "unit": "Teaspoon", "amount": 1}
+    ],
+    "steps": [
+      "Bake dark chocolate cupcakes according to package instructions and let cool.",
+      "Use a piping bag to fill each cupcake with raspberry filling, creating a 'bloody' center.",
+      "Frost cupcakes with blood red frosting and sprinkle with vampire fangs sprinkles.",
+      "Drizzle each cupcake with ghoul goo for an extra creepy touch.",
+      "Finish with a sprinkle of black magic dust for a mysterious shimmer."
+    ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Apple Pie",
+  "description": "Delicious apple pie with a flaky crust and cinnamon filling.",
+  "ingredients": [
+    {"name": "Apples", "unit": "Piece", "amount": 5},
+    {"name": "Sugar", "unit": "Gram", "amount": 200},
+    {"name": "Cinnamon", "unit": "Teaspoon", "amount": 2},
+    {"name": "Flour", "unit": "Gram", "amount": 250},
+    {"name": "Butter", "unit": "Gram", "amount": 150},
+    {"name": "Water", "unit": "Milliliter", "amount": 50},
+    {"name": "Salt", "unit": "Teaspoon", "amount": 1}
+  ],
+  "steps": [
+    "Peel and slice the apples.",
+    "Mix sugar and cinnamon in a bowl.",
+    "Prepare the crust by mixing flour, butter, water, and salt until dough forms.",
+    "Divide the dough into two portions, one for the crust and one for the lattice top.",
+    "Roll out the crust and place it in the pie dish.",
+    "Fill the pie with the apple mixture and add the lattice top.",
+    "Bake in the oven at 375°F for 45-50 minutes, or until golden brown."
+  ]
+}
+  

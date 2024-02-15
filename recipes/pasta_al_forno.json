@@ -1,0 +1,20 @@
+{
+  "name": "Pasta Al Forno",
+  "description": "Classic Italian baked pasta dish with layers of pasta, sauce, and cheese.",
+  "ingredients": [
+    {"name": "Pasta", "unit": "Gram", "amount": 500},
+    {"name": "Tomato Sauce", "unit": "Milliliter", "amount": 750},
+    {"name": "Mozzarella Cheese", "unit": "Gram", "amount": 300},
+    {"name": "Parmesan Cheese", "unit": "Gram", "amount": 100},
+    {"name": "Ground Beef", "unit": "Gram", "amount": 300},
+    {"name": "Onion", "unit": "Piece", "amount": 1}
+  ],
+  "steps": [
+    "Cook pasta according to package instructions.",
+    "Brown ground beef in a skillet with chopped onion.",
+    "Layer pasta, tomato sauce, ground beef mixture, and cheeses in a baking dish.",
+    "Repeat layers until all ingredients are used, ending with a layer of cheese on top.",
+    "Bake in the oven at 350°F for 25-30 minutes, or until cheese is melted and bubbly."
+  ]
+}
+  
