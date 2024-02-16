@@ -135,7 +135,7 @@ impl<T : Display> fmt::Display for NotACharacterError<T> {
 impl<T:Debug + Display> error::Error for NotACharacterError<T> {}
 
 fn main() {
-    let mut recipes: Vec<Recipe> = vec![];
+    let mut recipes: Vec<Recipe> = read_default_recipes().unwrap();
     println!("Welcome to the recipes CLI program!");
     println!("Here you can find recipes of all kinds, and even create your own!");
     loop {
@@ -185,92 +185,18 @@ fn string_to_unit(string: &str) -> Option<Unit> {
     
 }
 
-/*
-fn read_default_recipes() -> std::result::Result<Vec<Recipe>, Box<dyn std::error::Error>> {
-    
-    let file_path = "./recipes/recipes.txt";
-   
-    let file = File::open(&file_path)?;
-    
-    let reader = BufReader::new(file);
-   
-    let mut recipes: Vec<Recipe> = vec![];
-    let mut lines = reader.lines();
-    while let Some(first_line) = lines.next(){
-        let name = first_line?;
+fn read_default_recipes() -> Result<Vec<Recipe>, Box<dyn std::error::Error>>{
+    let file_path = "./recipes";
+    let json_file_paths = get_json_files_in_folder(file_path)?;
 
-        let description = match lines.next(){
-            Some(result) => result?,
-            None => Err("No description found for this recipe!")?
-        };
+    let mut recipes = vec![];
 
-        let number_of_ingredients = match lines.next() {
-            Some(n) => n?.parse::<u32>()?,
-            None => Err("No ingredient quantity found for this recipe!")?
-        };
-
-        let mut ingredients: Vec<Ingredient> = vec![];
-
-        for _ in 0..number_of_ingredients {
-            
-            let ingredient_details_string = match lines.next() {
-                Some(ingredient_details_result) =>  ingredient_details_result?,
-                None => Err("Ingredient number set does not match the actual ingredient count!")?
-            };
-
-            let mut ingredient_details = ingredient_details_string.split_whitespace();
-
-            let ingredient : Ingredient = Ingredient {
-                name: 
-                    match ingredient_details.next() {
-                        Some(ingr_name) => ingr_name.to_string(),
-                        None => Err("Ingredient does not have a name!")?
-                    },
-                quantity: 
-                    match ingredient_details.next(){
-                        Some(quantity_string) => quantity_string.parse::<f32>()?,
-                        None => Err("Ingredient does not have a quantity!")?
-                    },
-                unit: 
-                    match ingredient_details.next(){
-                        Some(unit_string) => {
-                            match string_to_unit(unit_string){
-                                Some(unit) => unit,
-                                None => Err("Ingredient unit given invalid!")?,
-                            }
-                        },
-                        None => Err("Ingredient does not have a unit!")?
-                    }
-
-            };
-            ingredients.push(ingredient);
-        }
-        let step_count = match lines.next() {
-            Some(n) => n?.parse::<u32>()?,
-            None => Err("No step count found for this recipe!")?
-        };
-        
-        let mut steps: Vec<String> = vec![];
-
-        for _ in 0..step_count {
-            match lines.next() {
-                Some(step) => steps.push(step?),
-                None => Err("Step count set does not match the actual ingredient count!")?
-            }
-        }
-        
-        let recipe:Recipe = Recipe {
-            name,
-            description,
-            ingredients,
-            steps
-        };
-        recipes.push(recipe);
+    for json_file_path in json_file_paths {
+        recipes.push(read_recipe_from_json(json_file_path)?);
     }
-    
     Ok(recipes)
-}
- */
+}   
+
 
 fn read_recipe_from_json<P: AsRef<Path>>(path: P) -> Result<Recipe, Box<dyn  error::Error>> {
  
@@ -288,10 +214,6 @@ fn handle_user_choice(choice : MainMenuOption, recipes: &mut Vec<Recipe>) {
         MainMenuOption::ShowAllRecipes => print_recipes(recipes),
         MainMenuOption::AddNewRecipe => {
             let new_recipe = collect_recipe_from_user();
-            /* if add_recipe_to_file(&new_recipe).is_ok() {
-                recipes.push(new_recipe);
-            } 
-            */
             let recipe_adding_result = add_recipe_json(&new_recipe); 
             if recipe_adding_result.is_ok() {
                 recipes.push(new_recipe);
@@ -307,30 +229,43 @@ fn handle_user_choice(choice : MainMenuOption, recipes: &mut Vec<Recipe>) {
             while let Err(error) = stdin().read_line(&mut name) {
                 println!("Please try entering the name again: {}",error);
             };
-            // remove_recipe(&name.trim(), recipes);
-            println!("Succesfully deleted!");
+            let remove_result = remove_recipe(&name.trim(), recipes);
+            if remove_result.is_ok() {
+                println!("Succesfully deleted!");
+            } else {
+                println!("{:?}",remove_result);
+            }
         },
         MainMenuOption::Exit => std::process::exit(0),
     }   
 }
 
 /*
+*/
+
 fn remove_recipe(name : &str, recipes: &mut Vec<Recipe>) -> std::result::Result<(), Box<dyn std::error::Error>>{
     
-    for index in 0..recipes.len() {
-        if recipes[index].name.eq(name) {
-            recipes.remove(index);
-            delete_all_recipes_from_file()?;
-            for recipe in recipes {
-                add_recipe_to_file(recipe)?;
-            }
+    for (index, recipe) in recipes.iter().enumerate() {
+        if recipe.name.to_lowercase().eq(&name.to_lowercase()) {
+            delete_recipe_json(recipe);
+            // recipes.remove(index);
             return Ok(());
         }
     }
     Err("Recipe not found")?
 }
-*/
 
+fn delete_recipe_json(recipe : &Recipe) -> std::result::Result<(), Box<dyn std::error::Error>>{
+    let file_path = "./recipes/";
+    let file_name = 
+        &recipe.name
+        .to_lowercase()
+        .replace(" ", "_");
+    
+    println!("File name: {}.json", file_name);
+    fs::remove_file(format!("{}{}.json",file_path,file_name))?;
+    Ok(())
+}
 
 fn add_recipe_json(recipe: &Recipe) -> std::result::Result<(), Box<dyn error::Error>> {
     let file_name = 
@@ -349,36 +284,7 @@ fn add_recipe_json(recipe: &Recipe) -> std::result::Result<(), Box<dyn error::Er
     Ok(())
 }
 
-/*
-
-fn delete_all_recipes_from_file() -> std::result::Result<(), Box<dyn Error>>{
-    let file = File::create("./recipes/recipes.txt")?;
-    file.set_len(0)?;
-    
-    Ok(())
-}
-
-fn add_recipe_to_file(recipe : &Recipe) -> std::result::Result<(),Box<dyn Error>> {
-
-    let mut file  = fs::OpenOptions::new()
-       .create(true)
-       .append(true)
-       .open("./recipes/recipes.txt")?;
-    writeln!(file, "{}", recipe.name)?;
-    writeln!(file, "{}", recipe.description)?;
-    writeln!(file,"{}", recipe.ingredients.len())?;
-    for ing in &recipe.ingredients {
-        writeln!(file, "{}", ing)?;
-    }
-    writeln!(file,"{}",recipe.steps.len())?;
-    for step in &recipe.steps {
-        writeln!(file, "{}", step)?;
-    }
-    Ok(())
-}
-
- */
-
+ 
 fn collect_recipe_from_user() -> Recipe {
     println!("Please enter the name of the recipe!");
     let mut name : &mut String = &mut String::new();
