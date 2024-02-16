@@ -2,11 +2,31 @@
   "name": "Zombie Brain Dip",
   "description": "A gruesomely delicious dip that looks like a zombie's brain, but tastes much better.",
   "ingredients": [
-    {"name": "Cream Cheese", "unit": "Ounces", "amount": 8},
-    {"name": "Guacamole", "unit": "Cup", "amount": 1},
-    {"name": "Salsa", "unit": "Cup", "amount": 0.5},
-    {"name": "Sour Cream", "unit": "Cup", "amount": 0.25},
-    {"name": "Green Food Coloring", "unit": "Pieces", "amount": 2}
+    {
+      "name": "Cream Cheese",
+      "quantity": 8,
+      "unit": {"Volume":"Ounce"}
+    },
+    {
+      "name": "Guacamole",
+      "quantity": 1,
+      "unit": {"Volume":"Cup"}
+    },
+    {
+      "name": "Salsa",
+      "quantity": 0.5,
+      "unit": {"Volume":"Cup"}
+    },
+    {
+      "name": "Sour Cream",
+      "quantity": 0.25,
+      "unit": {"Volume":"Cup"}
+    },
+    {
+      "name": "Green Food Coloring",
+      "quantity": 2,
+      "unit": "Piece"
+    }
   ],
   "steps": [
     "In a bowl, mix together cream cheese, guacamole, salsa, and sour cream until well combined.",

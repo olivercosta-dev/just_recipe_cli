@@ -1,35 +1,41 @@
 #![allow(unused_imports)]
 
+use std::any::Any;
 use std::char::ToLowercase;
 use std::error::Error;
+use std::ffi::OsStr;
 use std::fmt::{self, Debug, DebugStruct, Display};
-use Volume::*;
-use Weight::*;
+use std::path::{self, Path, PathBuf};
 use std::fs::{self, read, File};
-use std::io::{stdin, BufRead, BufReader, Write};
+use std::io::{stdin, BufRead, BufReader, Read, Write};
+use std::ptr::null;
 use std::{char, default, error, io, vec};
 
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+use Volume::*;
+use Weight::*;
+
+#[derive(Debug, Deserialize, Serialize)]
 struct Recipe {
     name: String,
     description: String,
     ingredients: Vec<Ingredient>,
     steps: Vec<String>,
 }
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Ingredient{
     name: String,
     quantity: f32,
-    unit_of_measurement: Unit
+    unit: Unit
 }
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 enum Unit {
     Volume(Volume),
     Weight(Weight),
     Piece,
 }
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 enum Volume{
     Cup,
     Ounce,
@@ -38,13 +44,14 @@ enum Volume{
     Milliliter,
     Liter,
 }
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 enum Weight {
     Milligram,
     Gram,
     Decagram,
     Kilogram,
 }
+
 impl fmt::Display for Weight {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -78,9 +85,29 @@ impl fmt::Display for Unit {
 }
 impl fmt::Display for Ingredient {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {} {}", self.name, self.quantity, self.unit_of_measurement)
+        write!(f, "{} {} {}", self.name, self.quantity, self.unit)
     }
 }
+
+impl fmt::Display for Recipe {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut str = String::new();
+        str.push_str(&self.name);
+        str.push('\n');
+        str.push_str(&self.description);
+        str.push('\n');
+        for ingr in &self.ingredients {
+            str.push_str(&ingr.to_string());
+            str.push('\n');
+        }
+        for step in &self.steps {
+            str.push_str(step);
+            str.push('\n');
+        }
+        write!(f, "{}",str)
+    }
+}
+
 enum MainMenuOption{
     ShowAllRecipes,
     AddNewRecipe,
@@ -108,7 +135,7 @@ impl<T : Display> fmt::Display for NotACharacterError<T> {
 impl<T:Debug + Display> error::Error for NotACharacterError<T> {}
 
 fn main() {
-    let mut recipes: Vec<Recipe> = read_default_recipes().unwrap();
+    let mut recipes: Vec<Recipe> = vec![];
     println!("Welcome to the recipes CLI program!");
     println!("Here you can find recipes of all kinds, and even create your own!");
     loop {
@@ -117,7 +144,30 @@ fn main() {
     }
 }
 
-fn string_to_unit(string: &str) -> Option<Unit>{
+fn get_json_files_in_folder(path: &str) -> Result<Vec<PathBuf>, Box<dyn error::Error>> {
+    let json_paths = 
+        // Read the directory's entries
+        fs::read_dir(path)?
+        // Filter all invalid entries
+        .filter_map(|result| result.ok())
+        // Convert all directory entries to paths
+        .map(|entry| entry.path())
+        // Filter the ones that have a JSON extension
+        .filter_map(|path| {
+            if path
+                .extension()
+                .map_or(false, |exten| exten == "json") {
+                    Some(path)
+            } else {
+                None // filter_map will take care of None values
+            }
+        })
+        .collect::<Vec<PathBuf>>();
+    Ok(json_paths)
+}
+
+
+fn string_to_unit(string: &str) -> Option<Unit> {
     match string.to_lowercase().as_str() {
         "piece" | "pieces" => Some(Unit::Piece),
         "cup" | "cups" => Some(Unit::Volume(Volume::Cup)),
@@ -135,7 +185,8 @@ fn string_to_unit(string: &str) -> Option<Unit>{
     
 }
 
-fn read_default_recipes() -> Result<Vec<Recipe>, Box<dyn error::Error>> {
+/*
+fn read_default_recipes() -> std::result::Result<Vec<Recipe>, Box<dyn std::error::Error>> {
     
     let file_path = "./recipes/recipes.txt";
    
@@ -180,7 +231,7 @@ fn read_default_recipes() -> Result<Vec<Recipe>, Box<dyn error::Error>> {
                         Some(quantity_string) => quantity_string.parse::<f32>()?,
                         None => Err("Ingredient does not have a quantity!")?
                     },
-                unit_of_measurement: 
+                unit: 
                     match ingredient_details.next(){
                         Some(unit_string) => {
                             match string_to_unit(unit_string){
@@ -219,6 +270,17 @@ fn read_default_recipes() -> Result<Vec<Recipe>, Box<dyn error::Error>> {
     
     Ok(recipes)
 }
+ */
+
+fn read_recipe_from_json<P: AsRef<Path>>(path: P) -> Result<Recipe, Box<dyn  error::Error>> {
+ 
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+
+    Ok (
+        serde_json::from_reader(reader)?
+    )
+}
 
 fn handle_user_choice(choice : MainMenuOption, recipes: &mut Vec<Recipe>) {
     
@@ -226,10 +288,17 @@ fn handle_user_choice(choice : MainMenuOption, recipes: &mut Vec<Recipe>) {
         MainMenuOption::ShowAllRecipes => print_recipes(recipes),
         MainMenuOption::AddNewRecipe => {
             let new_recipe = collect_recipe_from_user();
-            if add_recipe_to_file(&new_recipe).is_ok() {
+            /* if add_recipe_to_file(&new_recipe).is_ok() {
                 recipes.push(new_recipe);
-            } else {
+            } 
+            */
+            let recipe_adding_result = add_recipe_json(&new_recipe); 
+            if recipe_adding_result.is_ok() {
+                recipes.push(new_recipe);
+            }
+            else {
                 println!("Something went wrong... Recipe could not be added to the file!");
+                println!("{:?}", recipe_adding_result);
             }
         }
         MainMenuOption::RemoveRecipe => {
@@ -238,14 +307,15 @@ fn handle_user_choice(choice : MainMenuOption, recipes: &mut Vec<Recipe>) {
             while let Err(error) = stdin().read_line(&mut name) {
                 println!("Please try entering the name again: {}",error);
             };
-            remove_recipe(&name.trim(), recipes);
+            // remove_recipe(&name.trim(), recipes);
             println!("Succesfully deleted!");
         },
         MainMenuOption::Exit => std::process::exit(0),
     }   
 }
 
-fn remove_recipe(name : &str, recipes: &mut Vec<Recipe>) -> Result<(), Box<dyn Error>>{
+/*
+fn remove_recipe(name : &str, recipes: &mut Vec<Recipe>) -> std::result::Result<(), Box<dyn std::error::Error>>{
     
     for index in 0..recipes.len() {
         if recipes[index].name.eq(name) {
@@ -259,15 +329,37 @@ fn remove_recipe(name : &str, recipes: &mut Vec<Recipe>) -> Result<(), Box<dyn E
     }
     Err("Recipe not found")?
 }
+*/
 
-fn delete_all_recipes_from_file() -> Result<(), Box<dyn Error>>{
+
+fn add_recipe_json(recipe: &Recipe) -> std::result::Result<(), Box<dyn error::Error>> {
+    let file_name = 
+        recipe.name
+        .to_lowercase()
+        .replace(' ', "_");
+    let file_path = format!("./recipes/{}.json",file_name);
+    let json = serde_json::to_string(recipe)?;
+    
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(false)
+        .open(file_path)?;
+    file.write_all(json.as_bytes())?;
+    Ok(())
+}
+
+/*
+
+fn delete_all_recipes_from_file() -> std::result::Result<(), Box<dyn Error>>{
     let file = File::create("./recipes/recipes.txt")?;
     file.set_len(0)?;
     
     Ok(())
 }
 
-fn add_recipe_to_file(recipe : &Recipe) -> Result<(),Box<dyn Error>> {
+fn add_recipe_to_file(recipe : &Recipe) -> std::result::Result<(),Box<dyn Error>> {
+
     let mut file  = fs::OpenOptions::new()
        .create(true)
        .append(true)
@@ -284,6 +376,8 @@ fn add_recipe_to_file(recipe : &Recipe) -> Result<(),Box<dyn Error>> {
     }
     Ok(())
 }
+
+ */
 
 fn collect_recipe_from_user() -> Recipe {
     println!("Please enter the name of the recipe!");
@@ -375,7 +469,7 @@ fn read_ingredient() -> Ingredient {
                         return Ingredient {
                             name: name.to_string(),
                             quantity,
-                            unit_of_measurement: unit
+                            unit
                         };
                 } else {
                     println!("Unit or quanity format incorrect!");
@@ -417,7 +511,7 @@ fn get_user_choice() -> MainMenuOption {
     }
 }
 
-fn validate_user_selection(selection: &mut String ) -> Result<MainMenuOption, Box<dyn error::Error>> {
+fn validate_user_selection(selection: &mut String ) -> std::result::Result<MainMenuOption, Box<dyn error::Error>> {
     
     while selection.ends_with('\n') || selection.ends_with('\r') {
         selection.pop();
@@ -459,4 +553,3 @@ fn print_recipes(recipes: &Vec<Recipe>){
         println!();
     }
 }
-

@@ -2,11 +2,31 @@
   "name": "Witch's Brew Punch",
   "description": "A bewitching concoction that will cast a spell on your taste buds and leave you feeling spellbound.",
   "ingredients": [
-    {"name": "Grape Juice", "unit": "Cups", "amount": 2},
-    {"name": "Lemon-Lime Soda", "unit": "Cup", "amount": 1},
-    {"name": "Orange Juice", "unit": "Cup", "amount": 1},
-    {"name": "Blackcurrant Syrup", "unit": "Cup", "amount": 0.5},
-    {"name": "Gummy Worms", "unit": "Cup", "amount": 0.5}
+    {
+      "name": "Grape Juice",
+      "quantity": 2,
+      "unit": {"Volume":"Cup"}
+    },
+    {
+      "name": "Lemon-Lime Soda",
+      "quantity": 1,
+      "unit": {"Volume":"Cup"}
+    },
+    {
+      "name": "Orange Juice",
+      "quantity": 1,
+      "unit": {"Volume":"Cup"}
+    },
+    {
+      "name": "Blackcurrant Syrup",
+      "quantity": 0.5,
+      "unit": {"Volume":"Cup"}
+    },
+    {
+      "name": "Gummy Worms",
+      "quantity": 0.5,
+      "unit": {"Volume":"Cup"}
+    }
   ],
   "steps": [
     "In a large cauldron or punch bowl, mix together grape juice, lemon-lime soda, orange juice, and blackcurrant syrup.",
