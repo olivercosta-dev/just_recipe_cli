@@ -225,11 +225,11 @@ fn handle_user_choice(choice : MainMenuOption, recipes: &mut Vec<Recipe>) {
         }
         MainMenuOption::RemoveRecipe => {
             println!("Please enter the name of the recipe!");
-            let mut name : &mut String = &mut String::new();
-            while let Err(error) = stdin().read_line(&mut name) {
+            let name : &mut String = &mut String::new();
+            while let Err(error) = stdin().read_line(name) {
                 println!("Please try entering the name again: {}",error);
             };
-            let remove_result = remove_recipe(&name.trim(), recipes);
+            let remove_result = remove_recipe(name.trim(), recipes);
             if remove_result.is_ok() {
                 println!("Succesfully deleted!");
             } else {
@@ -243,12 +243,12 @@ fn handle_user_choice(choice : MainMenuOption, recipes: &mut Vec<Recipe>) {
 /*
 */
 
-fn remove_recipe(name : &str, recipes: &mut Vec<Recipe>) -> std::result::Result<(), Box<dyn std::error::Error>>{
+fn remove_recipe(name : &str, recipes:  &mut Vec<Recipe>) -> std::result::Result<(), Box<dyn std::error::Error>>{
     
     for (index, recipe) in recipes.iter().enumerate() {
         if recipe.name.to_lowercase().eq(&name.to_lowercase()) {
-            delete_recipe_json(recipe);
-            // recipes.remove(index);
+            delete_recipe_json(recipe)?;
+            recipes.remove(index);
             return Ok(());
         }
     }
@@ -260,7 +260,7 @@ fn delete_recipe_json(recipe : &Recipe) -> std::result::Result<(), Box<dyn std::
     let file_name = 
         &recipe.name
         .to_lowercase()
-        .replace(" ", "_");
+        .replace(' ', "_");
     
     println!("File name: {}.json", file_name);
     fs::remove_file(format!("{}{}.json",file_path,file_name))?;
@@ -287,23 +287,23 @@ fn add_recipe_json(recipe: &Recipe) -> std::result::Result<(), Box<dyn error::Er
  
 fn collect_recipe_from_user() -> Recipe {
     println!("Please enter the name of the recipe!");
-    let mut name : &mut String = &mut String::new();
-    while let Err(error) = stdin().read_line(&mut name){
+    let name : &mut String = &mut String::new();
+    while let Err(error) = stdin().read_line(name){
         println!("Please try entering the name again: {}",error);
     };
 
     println!("Please enter a description for the recipe! (Must be only 1 line)");
-    let mut description : &mut String = &mut String::new();
-    while let Err(error) = stdin().read_line(&mut description){
+    let description : &mut String = &mut String::new();
+    while let Err(error) = stdin().read_line(description){
         println!("Please try entering the description again: {}",error);
     };
 
     println!("Please enter the number of ingredients!");
     let mut number_of_ingredients : u32 = 0;
-    let mut number_of_ingredients_string : &mut String = &mut String::new();
+    let number_of_ingredients_string : &mut String = &mut String::new();
     let mut is_valid = false;
     while !is_valid {
-        while let Err(error) = stdin().read_line(&mut number_of_ingredients_string){
+        while let Err(error) = stdin().read_line(number_of_ingredients_string){
             println!("Please try entering the number again: {}", error);
         };
         match number_of_ingredients_string.trim().parse::<u32>(){
@@ -392,7 +392,7 @@ fn read_ingredient() -> Ingredient {
 fn read_step() -> String {
     loop {
         let mut buf = String::new();
-        if let Ok(_) = stdin().read_line(&mut buf){
+        if stdin().read_line(&mut buf).is_ok(){
             return buf;
         } else {
             println!("Step format wrong! Please try again!");
